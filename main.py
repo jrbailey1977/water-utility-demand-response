@@ -111,7 +111,8 @@ def run_simulation(mode, dm, forecast_df, g_cfg, w_cfg, ls_cfg, sim_params, dema
     sim_logger     = SimLogger(log_strategy, str(sim_start_date), demand_rate, period_fraction)
 
     stats = {'gwtp': 0.0, 'wwtp': 0.0, 'ls': 0.0,
-             'peak_kw': 0.0, 'peak_kw_gwtp': 0.0, 'peak_kw_wwtp': 0.0, 'peak_kw_ls': 0.0}
+             'peak_kw': 0.0, 'peak_kw_gwtp': 0.0, 'peak_kw_wwtp': 0.0, 'peak_kw_ls': 0.0,
+             'total_kwh': 0.0}
 
     for t in range(total_steps):
         state_w = physics_w.get_system_state()
@@ -172,6 +173,7 @@ def run_simulation(mode, dm, forecast_df, g_cfg, w_cfg, ls_cfg, sim_params, dema
         stats['peak_kw_gwtp'] = max(stats['peak_kw_gwtp'], instant_kw_gwtp)
         stats['peak_kw_wwtp'] = max(stats['peak_kw_wwtp'], instant_kw_wwtp)
         stats['peak_kw_ls']   = max(stats['peak_kw_ls'],   instant_kw_ls)
+        stats['total_kwh']   += instant_kw * hr_share   # accumulate kWh for sensitivity writer
 
         # Per-step solver times for CSV (last solve call times from each optimizer)
         step_solver_times = None
@@ -384,7 +386,9 @@ def main():
 
     # Write sensitivity table
     sim_start = sim_params.get('start_date', '2026-01-01 00:00:00')
-    write_sensitivity_table(str(sim_start), res_base, optimized_results, demand_rate, period_fraction)
+    kwh_opt = {lbl: res['total_kwh'] for lbl, res in optimized_results}
+    write_sensitivity_table(str(sim_start), res_base, optimized_results, demand_rate,
+                            period_fraction, kwh_base=res_base['total_kwh'], kwh_opt=kwh_opt)
 
 if __name__ == "__main__":
     main()

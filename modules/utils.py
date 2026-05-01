@@ -337,20 +337,22 @@ class SimLogger:
 # SECTION 5 -- SENSITIVITY TABLE WRITER
 # ==============================================================================
 
-# Rate scenarios: (label, energy adder $/kWh, demand rate $/kW -- None = use simulation rate)
-# Sources:
-#   EIA/DOE 2024: Texas commercial average ~$0.09/kWh all-in
+# Rate scenarios: (label, energy adder $/kWh, demand rate $/kW)
+# The adder represents the retail markup above ERCOT wholesale (TDU delivery
+# charge + REP margin). The demand charge structure is held at $15/kW/month
+# (CenterPoint TDSP tariff) across all scenarios -- only the energy component
+# scales with the adder. Sources:
+#   EIA STEO 2025: Texas commercial all-in average ~$0.09/kWh
 #   CenterPoint TDU delivery: ~$0.045-0.05/kWh
 #   ERCOT summer on-peak forward strip: $0.12-0.15/kWh range (2025-2026)
 _RATE_SCENARIOS = [
-    ('Wholesale only (simulated)',  0.00,  None),
-    ('+ Basic retail markup',       0.06,  15.0),
-    ('+ Full retail all-in',        0.10,  20.0),
-    ('+ Peak summer exposure',      0.13,  22.0),
+    ('Wholesale only (simulated)',  0.00, 15.0),
+    ('+ Basic retail markup',       0.06, 15.0),
+    ('+ Full retail all-in',        0.10, 15.0),
+    ('+ Peak summer exposure',      0.13, 15.0),
 ]
 
-_ANNUALIZE    = 52.18   # weeks/year (365.25 / 7)
-_SIM_AVG_PRICE = 0.02   # approximate ERCOT January day-ahead average ($/kWh)
+_ANNUALIZE = 52.18   # weeks/year (365.25 / 7)
 
 
 def write_sensitivity_table(
@@ -359,15 +361,20 @@ def write_sensitivity_table(
     optimized_results: List,
     demand_rate: float,
     period_fraction: float,
+    kwh_base: float,
+    kwh_opt: Dict[str, float],
     log_dir: str = 'logs',
 ) -> str:
     """Write a retail rate sensitivity table to CSV.
 
     The simulation runs against ERCOT wholesale prices. Real municipal utilities
     pay wholesale plus a retail adder (TDU delivery, REP margin, ancillary
-    services). This table scales energy savings across four rate scenarios to
-    show real-world dollar potential. Savings percentage is invariant to the
-    adder; dollar figures and annualized projections scale proportionally.
+    services). This function adds the adder to the actual kWh consumed by each
+    strategy to compute scenario bills, then annualizes the savings.
+
+    The demand charge structure ($15/kW/month, CenterPoint TDSP tariff) is held
+    constant across all scenarios -- only the energy component scales with the
+    adder. This is consistent with Table 8 of the final report.
 
     Args:
         sim_start_date:    ISO date string for the simulation start (used in filename).
@@ -375,6 +382,8 @@ def write_sensitivity_table(
         optimized_results: List of (label, results_dict) tuples for each strategy.
         demand_rate:       Demand charge rate used in simulation ($/kW/month).
         period_fraction:   Simulation duration as fraction of a billing month.
+        kwh_base:          Total kWh consumed by the baseline over the simulation.
+        kwh_opt:           Dict mapping strategy label to total kWh consumed.
         log_dir:           Output directory (default: logs/).
 
     Returns:
@@ -397,31 +406,28 @@ def write_sensitivity_table(
         ]
 
     rows = []
-    for scenario_label, adder, dc_override in _RATE_SCENARIOS:
-        dc_rate      = dc_override if dc_override is not None else demand_rate
-        energy_scale = (_SIM_AVG_PRICE + adder) / _SIM_AVG_PRICE
-
-        scaled_base_e  = base_energy * energy_scale
-        scaled_base_dc = res_base['peak_kw'] * dc_rate * period_fraction
-        scaled_base    = scaled_base_e + scaled_base_dc
+    for scenario_label, adder, dc_rate in _RATE_SCENARIOS:
+        # Bill = wholesale energy cost + adder * actual_kWh + demand charge
+        # Demand rate is fixed at $15/kW/month across all scenarios (report Table 8 footnote).
+        base_bill = base_energy + adder * kwh_base + res_base['peak_kw'] * dc_rate * period_fraction
 
         row = {
             'scenario':                     scenario_label,
             'energy_adder_per_kwh':         adder,
             'effective_demand_rate_per_kw': dc_rate,
-            'baseline_total_bill_usd':      round(scaled_base, 2),
+            'baseline_total_bill_usd':      round(base_bill, 2),
         }
 
         for lbl, res in optimized_results:
-            opt_energy   = sum(res[k] for k in ['gwtp', 'wwtp', 'ls'])
-            opt_dc       = res['peak_kw'] * dc_rate * period_fraction
-            scaled_opt_e = opt_energy * energy_scale
-            scaled_opt   = scaled_opt_e + opt_dc
-            savings      = scaled_base - scaled_opt
-            pct          = (savings / scaled_base * 100) if scaled_base else 0.0
-            annual       = savings * _ANNUALIZE
+            opt_energy = sum(res[k] for k in ['gwtp', 'wwtp', 'ls'])
+            opt_dc     = res['peak_kw'] * dc_rate * period_fraction
+            opt_kwh    = kwh_opt.get(lbl, 0.0)
+            opt_bill   = opt_energy + adder * opt_kwh + opt_dc
+            savings    = base_bill - opt_bill
+            pct        = (savings / base_bill * 100) if base_bill else 0.0
+            annual     = savings * _ANNUALIZE
 
-            row[f'{lbl}_total_bill_usd']         = round(scaled_opt, 2)
+            row[f'{lbl}_total_bill_usd']         = round(opt_bill, 2)
             row[f'{lbl}_savings_usd']            = round(savings, 2)
             row[f'{lbl}_savings_pct']            = round(pct, 1)
             row[f'{lbl}_annualized_savings_usd'] = round(annual, 2)
