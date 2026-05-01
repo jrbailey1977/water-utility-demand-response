@@ -1,0 +1,57 @@
+# =============================================================================
+# File: wwtp_config.yaml
+# Description: Physical and Biological parameters for the WWTP Package Plant.
+# Assets: Howden Roots Rotary Lobe Blowers and Aeration Basins.
+# Context: UIUC ENG 573 Capstone Project - Spring 2026
+# =============================================================================
+
+system:
+  name: "WWTP_PackagePlant_Twin"
+  type: "wastewater"
+  design_capacity_mgd: 1.5      # Rated hydraulic capacity
+
+# -----------------------------------------------------------------------------
+# 1. Biological State Boundaries (The "Oxygen Battery")
+# -----------------------------------------------------------------------------
+biology:
+  description: "Activated Sludge parameters for Dissolved Oxygen (DO) storage."
+  do_min_mg_l: 1.5              # Safety Floor (Prevent filamentous bacteria/odors)
+  do_max_mg_l: 4.5              # Ceiling (Diminishing returns/Saturation limit)
+  do_initial_mg_l: 2.0          # Starting point for simulation
+  do_saturation_limit: 8.2      # Physical max O2 concentration at 20°C
+  
+  # Mass Transfer Parameters
+  kla_max: 0.85                 # hr^-1 (Efficiency of Howden Roots diffusers)
+  our_base: 2.5                 # mg/L/hr (Oxygen Uptake Rate at design load)
+
+# -----------------------------------------------------------------------------
+# 2. Aeration Assets (Energy Consumers)
+# -----------------------------------------------------------------------------
+blowers:
+  aeration_blower:
+    description: "Howden Roots Rotary Lobe Blower (See IMG_3482)"
+    count: 2                    # Lead/Lag configuration visible in photos
+    motor_hp: 60.0              # Based on frame size in IMG_3483
+    motor_efficiency: 0.936     # NEMA Premium Efficiency assumption
+    type: "constant_speed"      # Rotary lobe characteristic
+    rated_kw: 45.0              # Calculated electrical demand
+
+# -----------------------------------------------------------------------------
+# 3. Influent Characteristics
+# -----------------------------------------------------------------------------
+influent:
+  description: "Load characteristics derived from diurnal flow patterns."
+  peak_factor: 2.5              # Ratio of peak flow to average
+  delay_from_water_demand_hr: 2 # Standard hydraulic lag for sewer collection
+
+# -----------------------------------------------------------------------------
+# 4. Influent Lift Station (Non-Flexible Load)
+# -----------------------------------------------------------------------------
+pumps:
+  lift_station:
+    description: "Influent submersible pumps (See IMG_3485)"
+    count: 3
+    motor_hp: 15.0              # Estimated from pipe diameter
+    motor_efficiency: 0.910     # Standard NEMA
+    rated_kw: 11.2              # Electrical draw per pump
+    design_flow_gpm: 400.0      # Capacity to handle peaks

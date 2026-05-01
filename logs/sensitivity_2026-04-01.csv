@@ -1,0 +1,5 @@
+scenario,energy_adder_per_kwh,effective_demand_rate_per_kw,baseline_total_bill_usd,MILP_total_bill_usd,MILP_savings_usd,MILP_savings_pct,MILP_annualized_savings_usd,NMPC_total_bill_usd,NMPC_savings_usd,NMPC_savings_pct,NMPC_annualized_savings_usd
+Wholesale only (simulated),0.0,15.0,549.16,385.6,163.56,29.8,8534.56,270.72,278.44,50.7,14529.03
++ Basic retail markup,0.06,15.0,1129.03,1014.4,114.63,10.2,5981.3,629.93,499.1,44.2,26043.02
++ Full retail all-in,0.1,20.0,1634.24,1492.27,141.96,8.7,7407.68,919.73,714.5,43.7,37282.69
++ Peak summer exposure,0.13,22.0,1971.62,1830.14,141.48,7.2,7382.47,1119.47,852.15,43.2,44465.16

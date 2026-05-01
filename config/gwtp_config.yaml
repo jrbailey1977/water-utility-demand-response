@@ -1,0 +1,78 @@
+# =============================================================================
+# File: gwtp_config.yaml
+# Description: Physical parameters for GWTP (Well -> GST -> 3x Boosters).
+# Topology: Two-Stage Pumping with Horizontal Hydropneumatic Tank and Air 
+#           Compressor.
+# =============================================================================
+
+system:
+  name: "GWTP_DigitalTwin"
+  type: "groundwater"
+
+# -----------------------------------------------------------------------------
+# 1. Storage Assets
+# -----------------------------------------------------------------------------
+storage:
+  gst:
+    description: "Ground Storage Tank receiving water from the well."
+    capacity_gal: 80000        # 0.08 MG
+    diameter_ft: 26.0          # Approx dim (26' D x 20' H)
+    height_ft: 20.0
+    min_level_ft: 2.0          # Pump suction protection
+    max_level_ft: 19.0         # Prevent overflow
+    initial_level_ft: 10.0     # Start 50% full
+  
+  hydro_tank:
+    description: "Horizontal Pressure Vessel (20'L x 8'D)."
+    # Physical Dimensions
+    length_ft: 20.0
+    diameter_ft: 8.0           # Physical steel height
+    
+    # Simulation Parameter (Calculated for ~7,500 gal total capacity)
+    # This allows WNTR (vertical model) to simulate horizontal volume correctly
+    effective_diameter_ft: 12.65 
+    
+    # Operating Limits (Air Cushion Management)
+    min_level_ft: 2.0          # Bottom 25%: Water Seal (Prevent air entering mains)
+    max_level_ft: 6.0          # Top 25%: Air Cushion (Prevent water entering air lines)
+    initial_level_ft: 4.0      # Start at 50% level
+
+# -----------------------------------------------------------------------------
+# 2. The Pumps (Energy Consumers)
+# -----------------------------------------------------------------------------
+pumps:
+  well_pump:
+    description: "Submersible Well Pump"
+    type: "well"
+    count: 1
+    motor_hp: 30.0             # SPECIFIED
+    motor_efficiency: 0.930    # SPECIFIED (NEMA Guaranteed)
+    pump_efficiency: 0.75      # Assumed hydraulic eff
+    design_flow_gpm: 450.0     # Est. flow for 30HP
+    
+  booster_pumps:
+    description: "Parallel Distribution Pumps"
+    type: "booster"
+    count: 3                   # SPECIFIED
+    motor_hp: 25.0             # SPECIFIED
+    motor_efficiency: 0.917    # SPECIFIED (NEMA Nominal)
+    pump_efficiency: 0.75      # Assumed hydraulic eff
+    design_flow_gpm: 350.0     # Est. flow per pump
+
+# -----------------------------------------------------------------------------
+# 3. Auxiliary Loads
+# -----------------------------------------------------------------------------
+auxiliary:
+  compressor:
+    description: "Air Compressor for Hydro Tank level maintenance."
+    motor_hp: 5.0              # SPECIFIED
+    motor_efficiency: 0.885    # SPECIFIED (NEMA Nominal)
+    runtime_hrs_per_day: 1.0   # Estimated duty cycle
+
+# -----------------------------------------------------------------------------
+# 4. System Constraints
+# -----------------------------------------------------------------------------
+hydraulics:
+  target_pressure_psi: 60.0    # USER SPECIFIED "Sweet Spot"
+  min_pressure_psi: 40.0       # Regulatory Minimum
+  max_pressure_psi: 80.0       # Pipe Safety Limit

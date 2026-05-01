@@ -1,0 +1,24 @@
+# =============================================================================
+# File: global_settings.yaml
+# Description: High-level parameters for the simulation orchestration.
+# =============================================================================
+
+simulation:
+  active_strategy: both        # Options: 'milp', 'nmpc', 'both'
+  start_date: "2026-01-01 00:00:00" # Winter
+  #start_date: "2026-04-01 00:00:00" # Spring
+  #start_date: "2025-07-01 00:00:00" # Summer
+  #start_date: "2025-10-01 00:00:00" # Fall
+
+  duration_days: 7             # Run for a full week
+  hydraulic_timestep_min: 15   # Update physics every 15 minutes - align with demand charge period
+  reporting_timestep_min: 15   # Log data every hour - align with demand charge period
+
+financial:
+  currency: "USD"
+  base_electricity_price: 0.10 # $/kWh average
+  demand_charge_enabled: true # activate for peak shaving logic
+  demand_charge_per_kw: 15.0   # $/kW/month - typical Texas municipal tariff
+
+optimization:
+  solver_timeout_sec: 300      # Stop looking for solution after 5 mins

@@ -1,0 +1,41 @@
+# ============================================================
+# requirements.txt
+# Smart Scheduling and Demand Response for Water Utilities
+# ENG 573 Capstone -- Joseph Bailey, UIUC Spring 2026
+# ============================================================
+# Install: pip install -r requirements.txt
+#
+# System-level solvers (not pip-installable):
+#   GLPK  -- required for MILP tier
+#             Ubuntu/Debian: sudo apt install glpk-utils
+#             macOS:         brew install glpk
+#   Ipopt -- required for NMPC tier
+#             Ubuntu/Debian: sudo apt install coinor-ipopt
+#             macOS:         brew install ipopt
+# ============================================================
+
+# --- Core data and configuration ---
+numpy>=1.24
+pandas>=2.0
+pyyaml>=6.0
+requests>=2.28
+
+# --- Market data (ERCOT day-ahead prices via GridStatus.io) ---
+# Requires environment variable: GRIDSTATUS_API_KEY
+gridstatusio>=0.20
+
+# --- Hydraulic network modeling ---
+wntr>=1.2
+
+# --- MILP optimization (Tier 1) ---
+# Requires system-level GLPK solver (see above)
+pyomo>=6.6
+
+# --- Nonlinear MPC (Tier 2) ---
+# Requires system-level Ipopt solver (see above)
+do-mpc>=4.6
+casadi>=3.6
+
+# --- Reinforcement Learning (Tier 3 -- stub, not yet implemented) ---
+stable-baselines3>=2.0
+gymnasium>=0.29
